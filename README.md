@@ -88,7 +88,7 @@ progetto/
         { 
             "text": "...",
             "images": \[...\] 
-        } ù
+        } 
 }
 
 ------------------------------------------------------------------------
@@ -129,9 +129,13 @@ Spostati nella cartella `web`:
 
 cd web
 
-Avvia un server statico:
+Avvia un server statico dalla cartella `web`:
 
-http-server -c-1 -o
+npx http-server -c-1 -o
+
+Se il comando non funziona, installare prima:
+
+npm install -g http-server
 
 ------------------------------------------------------------------------
 
