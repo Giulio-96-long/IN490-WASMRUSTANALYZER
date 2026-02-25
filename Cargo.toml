@@ -1,0 +1,22 @@
+[package]
+name = "wamrustanalyzer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlInputElement"] }
+scraper = "0.17"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.5"
+base64 = "0.21"  
+getrandom = { version = "0.2", features = ["js"] } # per WebAssembly
+image = "0.24"
+wasm-bindgen-futures = "0.4"
+pdfium-render = { version = "0.8"}
+js-sys = "0.3"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="wasm/pdfium.js"></script>
+    <title>Wasm Rust Analyzer</title>
+    <style>
+ * { box-sizing: border-box; }
+
+body{
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 34px 18px;
+  background: #f6f7fb;
+  color: #111;
+}
+
+.container{
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+header{
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+h1{
+  margin: 0;
+  font-size: 42px;
+  letter-spacing: .2px;
+}
+
+.subtitle{
+  margin-top: 10px;
+  color: #555;
+  font-size: 18px;
+}
+
+.card{
+  background: #fff;
+  border: 1px solid #e9e9ee;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+}
+
+.help{
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 14px;
+}
+
+.help ol{
+  margin: 10px 0 0 20px;
+  padding: 0;
+}
+
+.controls{
+  display: grid;
+  grid-template-columns: 240px 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.field label{
+  display: block;
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+select{
+  width: 100%;
+  font-size: 18px;
+  padding: 12px 14px;
+  border: 1px solid #d9d9e2;
+  border-radius: 12px;
+  background: #fff;
+  outline: none;
+}
+
+.file-row{
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.file-input-hidden{
+  display: none;
+}
+
+.file-name{
+  font-size: 16px;
+  color: #555;
+  max-width: 560px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn{
+  font-size: 18px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: transform .05s ease, opacity .15s ease, filter .15s ease;
+  white-space: nowrap;
+}
+
+.btn:active{
+  transform: translateY(1px);
+}
+
+.btn:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.btn:hover{
+  filter: brightness(0.98);
+}
+
+.btn-secondary{
+  background: #f1f3f7;
+  border-color: #d9d9e2;
+  color: #111;
+}
+
+.btn-primary{
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+}
+
+.btn-danger{
+  background: #ffecec;
+  border-color: #ffb7b7;
+  color: #9b0000;
+}
+
+.messages{
+  margin-top: 14px;
+  min-height: 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.error{
+  color: #b00020;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.status{
+  color: #333;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.output{
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.section-title{
+  font-size: 22px;
+  margin: 0 0 12px 0;
+}
+
+#output-text{
+  white-space: pre-wrap;
+  line-height: 1.55;
+  font-size: 16px;
+  color: #222;
+  border: 1px solid #ececf2;
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 170px;
+  background: #fff;
+}
+
+#output-images{
+  border: 1px solid #ececf2;
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 170px;
+  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+#output-images img{
+  max-width: 170px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  padding: 5px;
+}
+
+/* Responsive: su schermi piccoli va a colonna */
+@media (max-width: 900px){
+  body{
+    padding: 24px 14px;
+  }
+
+  h1{
+    font-size: 34px;
+  }
+
+  .controls{
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .file-row{
+    flex-wrap: wrap;
+  }
+
+  .file-name{
+    max-width: 100%;
+  }
+}
+
+</style>
+
+</head>
+<body>
+    <h1>Wasm Rust Analyzer</h1>
+    <p class="subtitle">Estrai testo e immagini da un file HTML o PDF.</p>
+
+    <div class="instructions">
+      <strong>Come funziona:</strong>
+      <ol>
+        <li>Seleziona il tipo di file (HTML o PDF)</li>
+        <li>Carica il file</li>
+        <li>Clicca <em>Estrai</em></li>
+      </ol>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label class="label" for="fileType">Tipo file</label>
+        <select id="fileType" name="fileType">
+          <option value="html">HTML</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="label">File</label>
+
+        <!-- input vero nascosto -->
+        <input type="file" id="fileInput" accept=".html,.pdf" class="file-input-hidden">
+
+        <!-- bottone finto -->
+        <label for="fileInput" class="btn btn-secondary">Carica file</label>
+
+        <!-- nome file selezionato -->
+        <span id="fileName" class="file-name">Nessun file selezionato</span>
+      </div>
+
+      <div class="control-group actions">
+        <button id="analyzeButton" class="btn btn-primary">Estrai</button>
+        <button id="resetButton" class="btn btn-danger">Reset</button>
+      </div>
+    </div>
+
+    <div id="error-message" class="error"></div>
+    <div id="status-message" class="status"></div>
+
+    <div id="output-container">
+        <h2>Testo Estratto</h2>
+        <div id="output-text"></div>
+        <hr>
+        <h2>Immagini Estratte</h2>
+        <div id="output-images"></div>
+    </div>
+
+<script type="module">
+  import init, { extract_content_from_html, extract_content_from_pdf, initialize_pdfium_render } from './pkg/wamrustanalyzer.js';
+  import * as wasm_bindgen from './pkg/wamrustanalyzer.js';
+  import * as wamrust from './pkg/wamrustanalyzer.js';
+
+  async function initializePdfium() {
+    
+    return PDFiumModule({ locateFile: (file) => `./wasm/${file}` }).then(async pdfiumModule => {
+      await init();
+      const success = wamrust.initialize_pdfium_render(pdfiumModule, wasm_bindgen, false);
+      console.assert(success, "Errore inizializzazione pdfium-render!");
+    });
+  }
+  
+  function uint8ArrayToBase64(uint8Array) {
+    let binary = "";
+    uint8Array.forEach(byte => binary += String.fromCharCode(byte));
+    return btoa(binary);
+  }
+  
+  function setStatus(msg) {
+    document.getElementById("status-message").textContent = msg;
+  }
+
+  function showError(msg) {
+    document.getElementById("error-message").textContent = msg;
+  }
+
+  function clearUI() {
+    showError("");
+    setStatus("");
+    document.getElementById("output-text").textContent = "";
+    document.getElementById("output-images").innerHTML = "";
+  }
+
+  function setLoading(isLoading) {
+    // Disabilito i controlli per evitare doppi click durante l’estrazione
+    document.getElementById("analyzeButton").disabled = isLoading;
+    document.getElementById("resetButton").disabled = isLoading;
+    document.getElementById("fileInput").disabled = isLoading;
+    document.getElementById("fileType").disabled = isLoading;
+
+    if (isLoading) setStatus("Estrazione in corso...");
+    else setStatus("");
+  }
+
+  async function run() {
+    await initializePdfium();
+    
+      document.getElementById("fileInput").addEventListener("change", () => {
+      const input = document.getElementById("fileInput");
+      const label = document.getElementById("fileName");
+      label.textContent = (input.files && input.files[0]) ? input.files[0].name : "Nessun file selezionato";
+    });
+
+    document.getElementById("resetButton").onclick = () => {
+      clearUI();
+      document.getElementById("fileInput").value = "";  // reset file selezionato
+      document.getElementById("fileName").textContent = "Nessun file selezionato";
+      document.getElementById("fileType").value = "html"; // opzionale: torna a HTML
+    };
+
+    document.getElementById('analyzeButton').onclick = async () => {
+      const fileInput = document.getElementById('fileInput');
+      const selectedType = document.getElementById('fileType').value;
+
+      const outputText = document.getElementById('output-text');
+      const imgContainer = document.getElementById('output-images');
+
+      clearUI();
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showError("Seleziona un file prima di procedere.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const name = file.name.toLowerCase();
+      const mime = file.type;
+
+      const isPdfFile  = mime === "application/pdf" || name.endsWith(".pdf");
+      const isHtmlFile = mime === "text/html"       || name.endsWith(".html");
+
+      if (!isPdfFile && !isHtmlFile) {
+        showError("Errore: caricare un file HTML (.html) o PDF (.pdf) valido.");
+        return;
+      }
+      if (selectedType === "html" && !isHtmlFile) {
+        showError("Hai selezionato HTML ma il file sembra essere un PDF.");
+        return;
+      }
+      if (selectedType === "pdf" && !isPdfFile) {
+        showError("Hai selezionato PDF ma il file sembra essere un HTML.");
+        return;
+      }
+
+      // Mostra “Estrazione in corso...”
+      setLoading(true);
+
+      try {        
+        await new Promise(r => setTimeout(r, 0));
+
+        // --- PDF ---
+        if (selectedType === "pdf") {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfData = new Uint8Array(arrayBuffer);
+
+          const res = extract_content_from_pdf(pdfData);
+
+          if (!res.ok) {
+            showError(res.error?.message ?? "Errore PDF sconosciuto");
+            return;
+          }
+
+          outputText.textContent = res.data?.text ?? "";
+
+          imgContainer.innerHTML = "";
+          const imgs = res.data?.images ?? [];
+          if (imgs.length > 0) {
+            imgs.forEach(uint8Array => {
+              const base64String = uint8ArrayToBase64(uint8Array);
+              const img = document.createElement("img");
+              img.src = `data:image/png;base64,${base64String}`;
+              img.style.maxWidth = "100px";
+              img.style.margin = "10px";
+              imgContainer.appendChild(img);
+            });
+          } else {
+            imgContainer.textContent = "Nessuna immagine trovata nel PDF.";
+          }
+
+          return;
+        }
+
+        // --- HTML ---
+        if (selectedType === "html") {
+          const reader = new FileReader();
+
+          // uso await per gestire bene loading/finally
+          const res = await new Promise((resolve, reject) => {
+            reader.onload = () => {
+              try {
+                const htmlContent = String(reader.result ?? "");
+                resolve(extract_content_from_html(htmlContent));
+              } catch (e) {
+                reject(e);
+              }
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+          });
+
+          if (!res.ok) {
+            showError(res.error?.message ?? "Errore HTML sconosciuto");
+            return;
+          }
+
+          outputText.textContent = res.data?.text ?? "";
+
+          imgContainer.innerHTML = "";
+          const imgs = res.data?.images ?? [];
+          if (imgs.length > 0) {
+            imgs.forEach(src => {
+              const img = document.createElement("img");
+              img.src = src;
+              img.style.maxWidth = "200px";
+              img.style.margin = "10px";
+              imgContainer.appendChild(img);
+            });
+          } else {
+            imgContainer.textContent = "Nessuna immagine trovata nell'HTML.";
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        showError("Errore imprevisto durante l'estrazione.");
+      } finally {
+        // Fine estrazione
+        setLoading(false);
+      }
+    };
+  }
+
+  run();
+</script>
+
+</body>
+</html>
+

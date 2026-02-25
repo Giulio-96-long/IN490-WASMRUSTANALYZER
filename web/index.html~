@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wasm Rust Analyzer</title>
+</head>
+<body>
+    <h1>Wasm Rust Analyzer</h1>
+    <p>Carica un file HTML per estrarre il testo dal suo corpo:</p>
+
+    <!-- Input file per caricare un file HTML -->
+    <input type="file" id="fileInput" accept=".html"/>
+    <button id="analyzeButton">Analizza</button>
+    <div id="output"></div> <!-- Dove viene visualizzato il testo estratto -->
+
+    <script type="module">
+        // Carica il modulo WebAssembly generato
+        import init, { extract_text_from_html } from './pkg/wamrustanalyzer.js';
+
+       async function run() {
+    await init();
+
+    document.getElementById('analyzeButton').onclick = () => {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const htmlContent = reader.result;
+                const result = extract_content_from_html(htmlContent);
+                
+                // Converte il risultato JSON in un oggetto JavaScript
+                const data = JSON.parse(result);
+
+                // Mostra il testo
+                document.getElementById('output-text').textContent = data.text;
+
+                // Mostra le immagini
+                const imgContainer = document.getElementById('output-images');
+                imgContainer.innerHTML = ""; // Pulisce contenitore immagini
+                data.images.forEach(src => {
+                    const img = document.createElement("img");
+                    img.src = src;
+                    img.style.maxWidth = "200px"; // Ridimensiona le immagini
+                    img.style.margin = "10px";
+                    imgContainer.appendChild(img);
+                });
+            };
+
+            reader.readAsText(file);
+        }
+    };
+}
+
+run();
+    </script>
+</body>
+</html>
+
