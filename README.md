@@ -136,9 +136,3 @@ npx http-server -c-1 -o
 Se il comando non funziona, installare prima:
 
 npm install -g http-server
-
-------------------------------------------------------------------------
-
-## Autore
-
-Progetto sviluppato per studio e sperimentazione su Rust + WebAssembly.
